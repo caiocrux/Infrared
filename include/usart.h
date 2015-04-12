@@ -40,3 +40,4 @@ unsigned char USART_ReceiveByte(unsigned char *a_data);
 void USART_SendString(char* cStringPtr);
 void USART_SendInterger(int iValue);
 void USART_RingFlush(void);
+void USART_SerialFlush (void);

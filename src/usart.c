@@ -29,10 +29,16 @@ int USART_Init(int iSpeed){
 	UBRR0H = (iBaudRate >> 8) & 0xff;
 	UBRR0L = iBaudRate & 0xff;
 	UCSR0B |= (1 << RXEN0 ) | (1 << TXEN0 ); 		// Turn on the transmission and reception
-	UCSR0B |= (1 << TXCIE0) | (1 << RXCIE0);		// Enablet he transmission and reception ISR
+
+	UCSR0B &= ~_BV(TXCIE0);			// disable transmission complete interrupt
+	UCSR0B |= (1 << RXCIE0);		// Enablet the reception ISR
+
 	UCSR0C = (1 << UCSZ00 ) | (1 << UCSZ01 ) ;  	// Set frame format to 8 data bits, no parity, 1 stop bit
 	//UBRR0= UBRR_VALUE;							// In AVR GCC we can simply assign UBRR_VALUE value to UBRR0 and leave to compiler to take care of writing sequence. ;)
 	USART_RingFlush();
+	USART_SerialFlush();
+
+
 	return 1;
 }
 
@@ -81,6 +87,12 @@ void USART_RingFlush (void){
 	 common_zero_mem(&g_tx_buff, FlushRing);
 
 }
+void USART_SerialFlush (void){
+	unsigned char dummy __attribute__((unused)) = 0x00;
+	g_rx_buff.tail = g_rx_buff.head = 0x00;
+	while ( UCSR0A & (1<<RXC0) ) dummy = UDR0;
+}
+
 ISR (USART_RX_vect ){
 //	PORTB ^= _BV(PB3);
 
@@ -104,7 +116,7 @@ ISR (USART_UDRE_vect){
 		g_tx_buff.tail = (g_tx_buff.tail + 1) % SERIAL_TX_RING_SIZE;
 	}
 	else {
-		UCSR0B &= ~(1 << UDRIE0);// mask the interrupt everything has been send
+		UCSR0B &= ~_BV(UDRIE0);// mask the interrupt everything has been send
 
 	}
 }
